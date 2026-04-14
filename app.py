@@ -144,7 +144,8 @@ def kpi_card(label, value, color=BLUE):
 # ─────────────────────────────────────────────
 # APP LAYOUT
 # ─────────────────────────────────────────────
-GAP  = "8px"
+GAP  = "10px"
+PAD  = "16px"        # padding dalam panel (dark area)
 GCFG = {"displayModeBar": False}
 
 def gchart(chart_id, height="300px"):
@@ -155,15 +156,15 @@ def panel(title, chart_id, height="300px"):
     return html.Div([
         html.Div(title, style={
             "color": TEXT, "fontWeight": "600", "fontSize": "13px",
-            "padding": "12px 14px 0 14px",
+            "padding": f"14px {PAD} 8px {PAD}",
         }),
-        gchart(chart_id, height),
+        html.Div(gchart(chart_id, height), style={
+            "padding": f"0 {PAD} {PAD} {PAD}",
+        }),
     ], style={
         "backgroundColor": CARD,
         "borderRadius": "10px",
-        "border": "1px solid #1e293b",
-        "overflow": "hidden",
-        "display": "flex", "flexDirection": "column",
+        "border": "1px solid #263349",
     })
 
 app = Dash(
@@ -173,18 +174,27 @@ app = Dash(
 )
 server = app.server
 
-# inject CSS global: hilangkan margin body, scrollbar gelap
+# inject CSS global
 app.index_string = """<!DOCTYPE html>
 <html>
 <head>{%metas%}<title>{%title%}</title>{%favicon%}{%css%}
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{background:#0f172a;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#334155 #0f172a}
+html,body{background:#0f172a;overflow-x:hidden;
+  scrollbar-width:thin;scrollbar-color:#334155 #0f172a}
 body::-webkit-scrollbar{width:6px}
 body::-webkit-scrollbar-track{background:#0f172a}
 body::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+/* Slider styling */
 .rc-slider-track{background:#3b82f6!important}
-.rc-slider-handle{border-color:#3b82f6!important;background:#3b82f6!important}
+.rc-slider-handle{border-color:#3b82f6!important;background:#3b82f6!important;
+  box-shadow:0 0 0 4px rgba(59,130,246,0.2)!important}
+.rc-slider-rail{background:#334155!important}
+.rc-slider-mark-text{color:#64748b!important;font-size:10px!important}
+/* Slider wrapper — beri ruang untuk marks di bawah */
+#date-slider{padding-bottom:20px!important}
+/* Hilangkan outline biru default Dash di graph */
+.dash-graph{border:none!important;outline:none!important}
 </style>
 </head>
 <body>{%app_entry%}
@@ -202,34 +212,44 @@ app.layout = html.Div(style={
 
     # ── HEADER ──────────────────────────────────────────────────────────────
     html.Div([
+        # Kiri: branding
         html.Div([
-            html.Span("Maven Fuzzy Factory", style={
-                "fontSize": "18px", "fontWeight": "800", "color": TEXT,
+            html.Div("Maven Fuzzy Factory", style={
+                "fontSize": "16px", "fontWeight": "800", "color": TEXT,
+                "whiteSpace": "nowrap",
             }),
-            html.Span(" · E-Commerce Analytics", style={
-                "fontSize": "12px", "color": DIM, "marginLeft": "8px",
+            html.Div("E-Commerce Analytics Dashboard", style={
+                "fontSize": "11px", "color": DIM, "marginTop": "2px",
             }),
-        ]),
+        ], style={"flexShrink": "0"}),
+
+        # Kanan: slider dengan label
         html.Div([
-            html.Span("Rentang Bulan:", style={"color": DIM, "fontSize": "11px", "marginRight": "12px", "whiteSpace": "nowrap"}),
+            html.Div([
+                html.Span("Filter Rentang Bulan", style={
+                    "color": DIM, "fontSize": "11px", "fontWeight": "500",
+                }),
+            ], style={"marginBottom": "6px"}),
             dcc.RangeSlider(
                 id="date-slider",
                 min=0, max=len(months_all) - 1,
                 value=[0, len(months_all) - 1],
-                marks={i: {"label": months_all[i], "style": {"color": DIM, "fontSize": "9px"}}
+                marks={i: {"label": months_all[i], "style": {"color": "#64748b", "fontSize": "10px"}}
                        for i in range(0, len(months_all), 6)},
-                tooltip={"placement": "bottom", "always_visible": False},
+                tooltip={"placement": "top", "always_visible": False},
                 allowCross=False,
             ),
-        ], style={"flex": "1", "display": "flex", "alignItems": "center",
-                  "marginLeft": "32px", "minWidth": "0"}),
+        ], style={
+            "flex": "1", "minWidth": "0",
+            "marginLeft": "40px",
+            "paddingBottom": "4px",   # ruang marks slider
+        }),
     ], style={
-        "display": "flex", "alignItems": "center",
+        "display": "flex", "alignItems": "flex-start",
         "backgroundColor": CARD,
-        "padding": "10px 16px",
+        "padding": "12px 16px 8px 16px",
         "borderBottom": "1px solid #1e293b",
         "position": "sticky", "top": "0", "zIndex": "100",
-        "gap": "8px",
     }),
 
     # ── KPI ROW ─────────────────────────────────────────────────────────────
@@ -237,7 +257,8 @@ app.layout = html.Div(style={
         "display": "grid",
         "gridTemplateColumns": "repeat(7, 1fr)",
         "gap": GAP,
-        "padding": f"{GAP} {GAP} 0 {GAP}",
+        "padding": GAP,
+        "paddingBottom": "0",
     }),
 
     # ── GRID UTAMA ──────────────────────────────────────────────────────────
