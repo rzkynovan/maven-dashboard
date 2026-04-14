@@ -20,10 +20,6 @@ COPY --from=builder /install /usr/local
 COPY app.py .
 COPY data/ ./data/
 
-# Non-root user untuk keamanan
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
-
 EXPOSE 8050
 
 # Gunicorn: 2 worker, timeout 120s (data loading bisa lambat saat cold start)
