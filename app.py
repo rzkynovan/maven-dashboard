@@ -417,14 +417,17 @@ def update_cvr(slider_val):
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=m["date"], y=m["conv_rate"],
-        fill="tozeroy", fillcolor=f"{PURPLE}40",
+        fill="tozeroy", fillcolor="rgba(168,85,247,0.25)",
         line=dict(color=PURPLE, width=2.5),
         mode="lines+markers", marker=dict(size=4),
         name="CVR (%)",
     ))
-    fig.add_hline(y=avg, line_dash="dash", line_color=DIM,
-                  annotation_text=f"Avg {avg:.2f}%",
-                  annotation_font_color=DIM)
+    fig.add_shape(type="line", xref="paper", x0=0, x1=1,
+                  yref="y", y0=avg, y1=avg,
+                  line=dict(color=DIM, dash="dash", width=1.5))
+    fig.add_annotation(xref="paper", x=1.0, yref="y", y=avg,
+                       text=f"Avg {avg:.2f}%", showarrow=False,
+                       font=dict(color=DIM, size=10), xanchor="right")
     fig.update_yaxes(ticksuffix="%")
     fig.update_layout(**dark_layout())
     return fig
@@ -506,9 +509,12 @@ def update_revenue(slider_val):
         line=dict(color=AMBER, width=2.5),
         mode="lines+markers", marker=dict(size=4),
     ), secondary_y=False)
-    fig.add_hline(y=rpo_avg, line_dash="dash", line_color=f"{AMBER}80",
-                  annotation_text=f"Avg ${rpo_avg:.2f}",
-                  annotation_font_color=DIM)
+    fig.add_shape(type="line", xref="paper", x0=0, x1=1,
+                  yref="y", y0=rpo_avg, y1=rpo_avg,
+                  line=dict(color="rgba(245,158,11,0.5)", dash="dash", width=1.5))
+    fig.add_annotation(xref="paper", x=1.0, yref="y", y=rpo_avg,
+                       text=f"Avg ${rpo_avg:.2f}", showarrow=False,
+                       font=dict(color=DIM, size=10), xanchor="right")
 
     fig.add_trace(go.Scatter(
         x=rv["date"], y=rv["rev_per_session"],
@@ -516,9 +522,17 @@ def update_revenue(slider_val):
         line=dict(color=GREEN, width=2.5),
         mode="lines+markers", marker=dict(size=4),
     ), secondary_y=True)
-    fig.add_hline(y=rps_avg, line_dash="dot", line_color=f"{GREEN}80",
-                  annotation_text=f"Avg ${rps_avg:.4f}",
-                  annotation_font_color=DIM, secondary_y=True)
+    # add_hline tidak support secondary_y → pakai add_shape dengan yref="y2"
+    fig.add_shape(
+        type="line", xref="paper", x0=0, x1=1,
+        yref="y2", y0=rps_avg, y1=rps_avg,
+        line=dict(color="rgba(34,197,94,0.5)", dash="dot", width=1.5),
+    )
+    fig.add_annotation(
+        xref="paper", x=1.0, yref="y2", y=rps_avg,
+        text=f"Avg ${rps_avg:.4f}", showarrow=False,
+        font=dict(color=DIM, size=10), xanchor="right",
+    )
 
     layout = dark_layout(legend=dict(orientation="h", y=1.08, bgcolor="rgba(0,0,0,0)", font=dict(color=DIM)))
     fig.update_layout(**layout)
