@@ -128,171 +128,155 @@ RED   = "#ef4444"
 AMBER = "#f59e0b"
 PURPLE= "#a855f7"
 
-def card(children, style=None):
-    base = {
-        "backgroundColor": CARD,
-        "borderRadius": "12px",
-        "padding": "20px",
-        "marginBottom": "16px",
-        "border": f"1px solid #334155",
-    }
-    if style:
-        base.update(style)
-    return html.Div(children, style=base)
-
 def kpi_card(label, value, color=BLUE):
     return html.Div([
-        html.P(label, style={"color": DIM, "fontSize": "13px", "margin": "0 0 4px 0"}),
-        html.H3(value, style={"color": color, "margin": "0", "fontSize": "22px", "fontWeight": "700"}),
+        html.Div(label, style={"color": DIM, "fontSize": "11px", "marginBottom": "4px", "whiteSpace": "nowrap", "overflow": "hidden", "textOverflow": "ellipsis"}),
+        html.Div(value, style={"color": color, "fontSize": "18px", "fontWeight": "700", "whiteSpace": "nowrap"}),
     ], style={
         "backgroundColor": CARD,
-        "borderRadius": "10px",
-        "padding": "16px 20px",
-        "border": f"1px solid {color}33",
-        "flex": "1",
-        "minWidth": "150px",
+        "borderRadius": "8px",
+        "padding": "10px 14px",
+        "border": f"1px solid #1e293b",
+        "borderTop": f"2px solid {color}",
+        "minWidth": "0",
     })
 
 # ─────────────────────────────────────────────
 # APP LAYOUT
 # ─────────────────────────────────────────────
+GAP  = "8px"
+GCFG = {"displayModeBar": False}
+
+def gchart(chart_id, height="300px"):
+    return dcc.Graph(id=chart_id, config=GCFG,
+                     style={"height": height, "width": "100%"})
+
+def panel(title, chart_id, height="300px"):
+    return html.Div([
+        html.Div(title, style={
+            "color": TEXT, "fontWeight": "600", "fontSize": "13px",
+            "padding": "12px 14px 0 14px",
+        }),
+        gchart(chart_id, height),
+    ], style={
+        "backgroundColor": CARD,
+        "borderRadius": "10px",
+        "border": "1px solid #1e293b",
+        "overflow": "hidden",
+        "display": "flex", "flexDirection": "column",
+    })
+
 app = Dash(
     __name__,
     title="Maven Fuzzy Factory Dashboard",
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
-server = app.server  # expose Flask server untuk Gunicorn
+server = app.server
+
+# inject CSS global: hilangkan margin body, scrollbar gelap
+app.index_string = """<!DOCTYPE html>
+<html>
+<head>{%metas%}<title>{%title%}</title>{%favicon%}{%css%}
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0f172a;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#334155 #0f172a}
+body::-webkit-scrollbar{width:6px}
+body::-webkit-scrollbar-track{background:#0f172a}
+body::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+.rc-slider-track{background:#3b82f6!important}
+.rc-slider-handle{border-color:#3b82f6!important;background:#3b82f6!important}
+</style>
+</head>
+<body>{%app_entry%}
+<footer>{%config%}{%scripts%}{%renderer%}</footer>
+</body>
+</html>"""
 
 app.layout = html.Div(style={
     "backgroundColor": BG,
-    "minHeight": "100vh",
-    "fontFamily": "'Inter', 'Segoe UI', sans-serif",
+    "fontFamily": "'Inter','Segoe UI',sans-serif",
     "color": TEXT,
-    "padding": "0",
+    "minHeight": "100vh",
+    "display": "flex", "flexDirection": "column",
 }, children=[
 
-    # ── HEADER ──────────────────────────────────
+    # ── HEADER ──────────────────────────────────────────────────────────────
     html.Div([
         html.Div([
-            html.H1("Maven Fuzzy Factory", style={
-                "margin": "0", "fontSize": "24px", "fontWeight": "800", "color": TEXT
+            html.Span("Maven Fuzzy Factory", style={
+                "fontSize": "18px", "fontWeight": "800", "color": TEXT,
             }),
-            html.P("E-Commerce Analytics Dashboard", style={
-                "margin": "2px 0 0 0", "color": DIM, "fontSize": "13px"
+            html.Span(" · E-Commerce Analytics", style={
+                "fontSize": "12px", "color": DIM, "marginLeft": "8px",
             }),
         ]),
         html.Div([
-            html.Label("Filter Rentang Bulan:", style={"color": DIM, "fontSize": "12px", "marginBottom": "4px"}),
+            html.Span("Rentang Bulan:", style={"color": DIM, "fontSize": "11px", "marginRight": "12px", "whiteSpace": "nowrap"}),
             dcc.RangeSlider(
                 id="date-slider",
                 min=0, max=len(months_all) - 1,
                 value=[0, len(months_all) - 1],
-                marks={
-                    i: {"label": months_all[i], "style": {"color": DIM, "fontSize": "10px"}}
-                    for i in range(0, len(months_all), 6)
-                },
+                marks={i: {"label": months_all[i], "style": {"color": DIM, "fontSize": "9px"}}
+                       for i in range(0, len(months_all), 6)},
                 tooltip={"placement": "bottom", "always_visible": False},
                 allowCross=False,
             ),
-        ], style={"flex": "1", "marginLeft": "40px", "maxWidth": "700px"}),
+        ], style={"flex": "1", "display": "flex", "alignItems": "center",
+                  "marginLeft": "32px", "minWidth": "0"}),
     ], style={
-        "display": "flex", "alignItems": "center", "flexWrap": "wrap",
+        "display": "flex", "alignItems": "center",
         "backgroundColor": CARD,
-        "padding": "20px 32px",
-        "borderBottom": "1px solid #334155",
+        "padding": "10px 16px",
+        "borderBottom": "1px solid #1e293b",
         "position": "sticky", "top": "0", "zIndex": "100",
+        "gap": "8px",
     }),
 
-    # ── MAIN CONTENT ────────────────────────────
-    html.Div(style={"padding": "24px 32px"}, children=[
+    # ── KPI ROW ─────────────────────────────────────────────────────────────
+    html.Div(id="kpi-cards", style={
+        "display": "grid",
+        "gridTemplateColumns": "repeat(7, 1fr)",
+        "gap": GAP,
+        "padding": f"{GAP} {GAP} 0 {GAP}",
+    }),
 
-        # ── KPI CARDS ───────────────────────────
-        html.Div(id="kpi-cards", style={
-            "display": "flex", "gap": "12px", "flexWrap": "wrap", "marginBottom": "24px"
-        }),
+    # ── GRID UTAMA ──────────────────────────────────────────────────────────
+    html.Div([
 
-        # ── BARIS 1: Trend & CVR ────────────────
+        # Baris 1 — 2:1
         html.Div([
-            html.Div([
-                card([
-                    html.H4("① Tren Sessions & Orders", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-trend", config={"displayModeBar": False}, style={"height": "300px"}),
-                ])
-            ], style={"flex": "2", "minWidth": "400px"}),
-            html.Div([
-                card([
-                    html.H4("② Conversion Rate Trend", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-cvr", config={"displayModeBar": False}, style={"height": "300px"}),
-                ])
-            ], style={"flex": "1", "minWidth": "280px"}),
-        ], style={"display": "flex", "gap": "16px", "flexWrap": "wrap"}),
+            panel("① Tren Sessions & Orders",   "chart-trend",  "290px"),
+            panel("② Conversion Rate Trend",    "chart-cvr",    "290px"),
+        ], style={"display": "grid", "gridTemplateColumns": "2fr 1fr", "gap": GAP}),
 
-        # ── BARIS 2: Channel ─────────────────────
+        # Baris 2 — 1:1:1
         html.Div([
-            html.Div([
-                card([
-                    html.H4("③ Sessions per Channel", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-ch-sessions", config={"displayModeBar": False}, style={"height": "300px"}),
-                ])
-            ], style={"flex": "1", "minWidth": "280px"}),
-            html.Div([
-                card([
-                    html.H4("③ CVR per Channel", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-ch-cvr", config={"displayModeBar": False}, style={"height": "300px"}),
-                ])
-            ], style={"flex": "1", "minWidth": "280px"}),
-            html.Div([
-                card([
-                    html.H4("③ Revenue Share (Donut)", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-ch-donut", config={"displayModeBar": False}, style={"height": "300px"}),
-                ])
-            ], style={"flex": "1", "minWidth": "280px"}),
-        ], style={"display": "flex", "gap": "16px", "flexWrap": "wrap"}),
+            panel("③ Sessions per Channel",    "chart-ch-sessions", "300px"),
+            panel("③ CVR per Channel",         "chart-ch-cvr",      "300px"),
+            panel("③ Revenue Share (Donut)",   "chart-ch-donut",    "300px"),
+        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": GAP}),
 
-        # ── BARIS 3: Revenue ─────────────────────
+        # Baris 3 — 2:1
         html.Div([
-            html.Div([
-                card([
-                    html.H4("④ Revenue per Order & Session", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-revenue", config={"displayModeBar": False}, style={"height": "320px"}),
-                ])
-            ], style={"flex": "2", "minWidth": "400px"}),
-            html.Div([
-                card([
-                    html.H4("⑤ COGS vs Gross Margin", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-margin", config={"displayModeBar": False}, style={"height": "320px"}),
-                ])
-            ], style={"flex": "1", "minWidth": "280px"}),
-        ], style={"display": "flex", "gap": "16px", "flexWrap": "wrap"}),
+            panel("④ Revenue per Order & Session", "chart-revenue", "300px"),
+            panel("⑤ COGS vs Gross Margin",        "chart-margin",  "300px"),
+        ], style={"display": "grid", "gridTemplateColumns": "2fr 1fr", "gap": GAP}),
 
-        # ── BARIS 4: Refund ──────────────────────
-        card([
-            html.H4("⑥ Monthly Refund Count & Amount", style={"color": TEXT, "margin": "0 0 12px 0"}),
-            dcc.Graph(id="chart-refund", config={"displayModeBar": False}, style={"height": "280px"}),
-        ]),
+        # Baris 4 — full width
+        panel("⑥ Monthly Refund Count & Amount", "chart-refund", "260px"),
 
-        # ── BARIS 5: Device & Pages ──────────────
+        # Baris 5 — 1:2
         html.Div([
-            html.Div([
-                card([
-                    html.H4("⑦ Sessions by Device Type", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-device", config={"displayModeBar": False}, style={"height": "280px"}),
-                ])
-            ], style={"flex": "1", "minWidth": "280px"}),
-            html.Div([
-                card([
-                    html.H4("⑦ Top 10 Halaman (Pageviews)", style={"color": TEXT, "margin": "0 0 12px 0"}),
-                    dcc.Graph(id="chart-pages", config={"displayModeBar": False}, style={"height": "280px"}),
-                ])
-            ], style={"flex": "2", "minWidth": "400px"}),
-        ], style={"display": "flex", "gap": "16px", "flexWrap": "wrap"}),
+            panel("⑦ Sessions by Device Type",        "chart-device", "280px"),
+            panel("⑦ Top 10 Halaman (Pageviews)",     "chart-pages",  "280px"),
+        ], style={"display": "grid", "gridTemplateColumns": "1fr 2fr", "gap": GAP}),
 
-    ]),
-
-    # ── FOOTER ──────────────────────────────────
-    html.Div("Maven Fuzzy Factory Analytics • Built with Dash", style={
-        "textAlign": "center", "color": DIM, "fontSize": "12px",
-        "padding": "20px", "borderTop": "1px solid #334155",
+    ], style={
+        "display": "grid",
+        "gridTemplateColumns": "1fr",
+        "gap": GAP,
+        "padding": GAP,
+        "flex": "1",
     }),
 ])
 
