@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Data mentah (hanya _clean.csv yang dibutuhkan)
+data/website_sessions.csv
+data/website_pageviews.csv
+data/orders.csv
+data/order_items.csv
+data/order_item_refunds.csv
+data/products.csv
+data/maven_fuzzy_factory_data_dictionary.csv
+data/master_dataset.csv
+
+# Misc
+.git/
+.gitignore
+.DS_Store
+*.log
+README.md
