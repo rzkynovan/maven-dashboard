@@ -299,10 +299,12 @@ app.layout = html.Div(style={
 # ─────────────────────────────────────────────
 # HELPER: layout plotly gelap
 # ─────────────────────────────────────────────
+PLOT_BG = "#162032"   # sedikit lebih terang dari CARD agar kontras
+
 def dark_layout(**kwargs):
     base = dict(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor=CARD,
+        plot_bgcolor=PLOT_BG,
         font=dict(color=TEXT, size=11),
         margin=dict(l=40, r=20, t=10, b=40),
         legend=dict(
@@ -310,16 +312,18 @@ def dark_layout(**kwargs):
             font=dict(color=DIM),
         ),
         xaxis=dict(
-            gridcolor="#334155", linecolor="#334155",
+            gridcolor="#1e3a5f", linecolor="#334155",
             tickfont=dict(color=DIM),
+            zerolinecolor="#334155",
         ),
         yaxis=dict(
-            gridcolor="#334155", linecolor="#334155",
+            gridcolor="#1e3a5f", linecolor="#334155",
             tickfont=dict(color=DIM),
+            zerolinecolor="#334155",
         ),
     )
     base.update(kwargs)
-    return go.Layout(**base)
+    return base   # kembalikan dict, bukan go.Layout
 
 # ─────────────────────────────────────────────
 # HELPER: filter data berdasarkan slider
@@ -377,7 +381,8 @@ def update_kpi(slider_val):
     Input("date-slider", "value"),
 )
 def update_trend(slider_val):
-    m = filter_monthly(slider_val)
+    m = filter_monthly(slider_val).copy()
+    m["date"] = pd.to_datetime(m["ym"].astype(str))
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     fig.add_trace(go.Bar(
@@ -391,14 +396,13 @@ def update_trend(slider_val):
         mode="lines+markers", marker=dict(size=4),
     ), secondary_y=True)
 
-    fig.update_layout(dark_layout(
-        legend=dict(orientation="h", y=1.08, bgcolor="rgba(0,0,0,0)", font=dict(color=DIM)),
-    ))
+    layout = dark_layout(legend=dict(orientation="h", y=1.08, bgcolor="rgba(0,0,0,0)", font=dict(color=DIM)))
+    fig.update_layout(**layout)
     fig.update_yaxes(title_text="Sessions", secondary_y=False,
-                     tickfont=dict(color=BLUE), gridcolor="#334155", linecolor="#334155")
+                     tickfont=dict(color=BLUE), gridcolor="#1e3a5f", linecolor="#334155")
     fig.update_yaxes(title_text="Orders",   secondary_y=True,
                      tickfont=dict(color=GREEN), gridcolor="rgba(0,0,0,0)", linecolor="#334155")
-    fig.update_xaxes(gridcolor="#334155", linecolor="#334155", tickfont=dict(color=DIM))
+    fig.update_xaxes(gridcolor="#1e3a5f", linecolor="#334155", tickfont=dict(color=DIM))
     return fig
 
 
@@ -407,12 +411,13 @@ def update_trend(slider_val):
     Input("date-slider", "value"),
 )
 def update_cvr(slider_val):
-    m   = filter_monthly(slider_val)
+    m   = filter_monthly(slider_val).copy()
+    m["date"] = pd.to_datetime(m["ym"].astype(str))
     avg = m["conv_rate"].mean()
-    fig = go.Figure(layout=dark_layout())
+    fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=m["date"], y=m["conv_rate"],
-        fill="tozeroy", fillcolor=f"{PURPLE}30",
+        fill="tozeroy", fillcolor=f"{PURPLE}40",
         line=dict(color=PURPLE, width=2.5),
         mode="lines+markers", marker=dict(size=4),
         name="CVR (%)",
@@ -421,6 +426,7 @@ def update_cvr(slider_val):
                   annotation_text=f"Avg {avg:.2f}%",
                   annotation_font_color=DIM)
     fig.update_yaxes(ticksuffix="%")
+    fig.update_layout(**dark_layout())
     return fig
 
 
@@ -431,13 +437,14 @@ def update_cvr(slider_val):
 def update_ch_sessions(_):
     df = ch_perf.sort_values("total_sessions")
     colors = [CHANNEL_COLORS.get(c, "#8b949e") for c in df["channel"]]
-    fig = go.Figure(layout=dark_layout(margin=dict(l=130, r=20, t=10, b=40)))
+    fig = go.Figure()
     fig.add_trace(go.Bar(
         y=df["channel"], x=df["total_sessions"],
         orientation="h", marker_color=colors, opacity=0.85,
         text=[f"{int(v):,}" for v in df["total_sessions"]],
         textposition="outside", textfont=dict(color=DIM, size=10),
     ))
+    fig.update_layout(**dark_layout(margin=dict(l=130, r=20, t=10, b=40)))
     fig.update_xaxes(tickformat=",")
     return fig
 
@@ -449,13 +456,14 @@ def update_ch_sessions(_):
 def update_ch_cvr(_):
     df = ch_perf.sort_values("cvr_pct")
     colors = [CHANNEL_COLORS.get(c, "#8b949e") for c in df["channel"]]
-    fig = go.Figure(layout=dark_layout(margin=dict(l=130, r=20, t=10, b=40)))
+    fig = go.Figure()
     fig.add_trace(go.Bar(
         y=df["channel"], x=df["cvr_pct"],
         orientation="h", marker_color=colors, opacity=0.85,
         text=[f"{v:.2f}%" for v in df["cvr_pct"]],
         textposition="outside", textfont=dict(color=DIM, size=10),
     ))
+    fig.update_layout(**dark_layout(margin=dict(l=130, r=20, t=10, b=40)))
     fig.update_xaxes(ticksuffix="%")
     return fig
 
@@ -467,18 +475,17 @@ def update_ch_cvr(_):
 def update_ch_donut(_):
     df = ch_perf.sort_values("total_revenue", ascending=False).head(6)
     colors = [CHANNEL_COLORS.get(c, "#8b949e") for c in df["channel"]]
-    fig = go.Figure(layout=dark_layout(margin=dict(l=10, r=10, t=10, b=10)))
+    fig = go.Figure()
     fig.add_trace(go.Pie(
         labels=df["channel"], values=df["total_revenue"],
         hole=0.55, marker_colors=colors,
         textinfo="percent", textfont=dict(size=11, color=TEXT),
         hovertemplate="<b>%{label}</b><br>Revenue: $%{value:,.0f}<br>Share: %{percent}<extra></extra>",
     ))
-    fig.update_layout(
-        legend=dict(font=dict(color=DIM, size=10), orientation="v",
-                    bgcolor="rgba(0,0,0,0)"),
+    fig.update_layout(**dark_layout(
         margin=dict(l=10, r=10, t=10, b=10),
-    )
+        legend=dict(font=dict(color=DIM, size=10), orientation="v", bgcolor="rgba(0,0,0,0)"),
+    ))
     return fig
 
 
@@ -487,7 +494,8 @@ def update_ch_donut(_):
     Input("date-slider", "value"),
 )
 def update_revenue(slider_val):
-    rv  = filter_rev(slider_val)
+    rv = filter_rev(slider_val).copy()
+    rv["date"] = pd.to_datetime(rv["ym"].astype(str))
     rpo_avg = rv["rev_per_order"].mean()
     rps_avg = rv["rev_per_session"].mean()
 
@@ -512,16 +520,15 @@ def update_revenue(slider_val):
                   annotation_text=f"Avg ${rps_avg:.4f}",
                   annotation_font_color=DIM, secondary_y=True)
 
-    fig.update_layout(dark_layout(
-        legend=dict(orientation="h", y=1.08, bgcolor="rgba(0,0,0,0)", font=dict(color=DIM)),
-    ))
+    layout = dark_layout(legend=dict(orientation="h", y=1.08, bgcolor="rgba(0,0,0,0)", font=dict(color=DIM)))
+    fig.update_layout(**layout)
     fig.update_yaxes(title_text="Rev/Order ($)",   secondary_y=False,
                      tickprefix="$", tickfont=dict(color=AMBER),
-                     gridcolor="#334155", linecolor="#334155")
+                     gridcolor="#1e3a5f", linecolor="#334155")
     fig.update_yaxes(title_text="Rev/Session ($)", secondary_y=True,
                      tickprefix="$", tickfont=dict(color=GREEN),
                      gridcolor="rgba(0,0,0,0)", linecolor="#334155")
-    fig.update_xaxes(gridcolor="#334155", linecolor="#334155", tickfont=dict(color=DIM))
+    fig.update_xaxes(gridcolor="#1e3a5f", linecolor="#334155", tickfont=dict(color=DIM))
     return fig
 
 
@@ -530,8 +537,9 @@ def update_revenue(slider_val):
     Input("date-slider", "value"),
 )
 def update_margin(slider_val):
-    rv = filter_rev(slider_val)
-    fig = go.Figure(layout=dark_layout())
+    rv = filter_rev(slider_val).copy()
+    rv["date"] = pd.to_datetime(rv["ym"].astype(str))
+    fig = go.Figure()
     fig.add_trace(go.Bar(
         x=rv["date"], y=rv["cogs"],
         name="COGS", marker_color=RED, opacity=0.8,
@@ -540,10 +548,10 @@ def update_margin(slider_val):
         x=rv["date"], y=rv["gross_margin"],
         name="Gross Margin", marker_color=GREEN, opacity=0.8,
     ))
-    fig.update_layout(
+    fig.update_layout(**dark_layout(
         barmode="stack",
         legend=dict(orientation="h", y=1.08, bgcolor="rgba(0,0,0,0)", font=dict(color=DIM)),
-    )
+    ))
     fig.update_yaxes(tickprefix="$", tickformat=",.0f")
     return fig
 
@@ -553,7 +561,8 @@ def update_margin(slider_val):
     Input("date-slider", "value"),
 )
 def update_refund(slider_val):
-    rf = filter_ref(slider_val)
+    rf = filter_ref(slider_val).copy()
+    rf["date"] = pd.to_datetime(rf["ym"].astype(str))
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(go.Bar(
         x=rf["date"], y=rf["refund_count"],
@@ -565,16 +574,15 @@ def update_refund(slider_val):
         line=dict(color=AMBER, width=2.5),
         mode="lines+markers", marker=dict(size=4),
     ), secondary_y=True)
-    fig.update_layout(dark_layout(
-        legend=dict(orientation="h", y=1.08, bgcolor="rgba(0,0,0,0)", font=dict(color=DIM)),
-    ))
+    layout = dark_layout(legend=dict(orientation="h", y=1.08, bgcolor="rgba(0,0,0,0)", font=dict(color=DIM)))
+    fig.update_layout(**layout)
     fig.update_yaxes(title_text="Refund Count",    secondary_y=False,
                      tickfont=dict(color=RED),
-                     gridcolor="#334155", linecolor="#334155")
+                     gridcolor="#1e3a5f", linecolor="#334155")
     fig.update_yaxes(title_text="Refund Amount ($)", secondary_y=True,
                      tickprefix="$", tickfont=dict(color=AMBER),
                      gridcolor="rgba(0,0,0,0)", linecolor="#334155")
-    fig.update_xaxes(gridcolor="#334155", linecolor="#334155", tickfont=dict(color=DIM))
+    fig.update_xaxes(gridcolor="#1e3a5f", linecolor="#334155", tickfont=dict(color=DIM))
     return fig
 
 
@@ -584,7 +592,7 @@ def update_refund(slider_val):
 )
 def update_device(_):
     colors = [BLUE, AMBER, GREEN, PURPLE][:len(device_dist)]
-    fig = go.Figure(layout=dark_layout(margin=dict(l=10, r=10, t=10, b=10)))
+    fig = go.Figure()
     fig.add_trace(go.Pie(
         labels=device_dist["device_type"],
         values=device_dist["count"],
@@ -594,6 +602,7 @@ def update_device(_):
         textfont=dict(size=11, color=TEXT),
         hovertemplate="<b>%{label}</b><br>Sessions: %{value:,}<br>Share: %{percent}<extra></extra>",
     ))
+    fig.update_layout(**dark_layout(margin=dict(l=10, r=10, t=10, b=10)))
     return fig
 
 
@@ -603,7 +612,7 @@ def update_device(_):
 )
 def update_pages(_):
     df = top_pages.sort_values("views")
-    fig = go.Figure(layout=dark_layout(margin=dict(l=160, r=20, t=10, b=40)))
+    fig = go.Figure()
     fig.add_trace(go.Bar(
         y=df["page"], x=df["views"],
         orientation="h",
@@ -611,6 +620,7 @@ def update_pages(_):
         text=[f"{int(v):,}" for v in df["views"]],
         textposition="outside", textfont=dict(color=DIM, size=10),
     ))
+    fig.update_layout(**dark_layout(margin=dict(l=160, r=20, t=10, b=40)))
     fig.update_xaxes(tickformat=",")
     return fig
 
