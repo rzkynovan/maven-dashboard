@@ -153,19 +153,10 @@ def gchart(chart_id, height="300px"):
                      style={"height": height, "width": "100%"})
 
 def panel(title, chart_id, height="300px"):
-    return html.Div([
-        html.Div(title, style={
-            "color": TEXT, "fontWeight": "600", "fontSize": "13px",
-            "padding": f"14px {PAD} 8px {PAD}",
-        }),
-        html.Div(gchart(chart_id, height), style={
-            "padding": f"0 {PAD} {PAD} {PAD}",
-        }),
-    ], style={
-        "backgroundColor": CARD,
-        "borderRadius": "10px",
-        "border": "1px solid #263349",
-    })
+    return html.Div(className="panel", children=[
+        html.Div(title, className="panel-title"),
+        html.Div(gchart(chart_id, height), className="panel-body"),
+    ])
 
 app = Dash(
     __name__,
@@ -174,27 +165,75 @@ app = Dash(
 )
 server = app.server
 
-# inject CSS global
 app.index_string = """<!DOCTYPE html>
 <html>
 <head>{%metas%}<title>{%title%}</title>{%favicon%}{%css%}
 <style>
+/* ── Reset ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#0f172a;overflow-x:hidden;
   scrollbar-width:thin;scrollbar-color:#334155 #0f172a}
 body::-webkit-scrollbar{width:6px}
 body::-webkit-scrollbar-track{background:#0f172a}
 body::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
-/* Slider styling */
+
+/* ── Slider ── */
 .rc-slider-track{background:#3b82f6!important}
 .rc-slider-handle{border-color:#3b82f6!important;background:#3b82f6!important;
   box-shadow:0 0 0 4px rgba(59,130,246,0.2)!important}
 .rc-slider-rail{background:#334155!important}
 .rc-slider-mark-text{color:#64748b!important;font-size:10px!important}
-/* Slider wrapper — beri ruang untuk marks di bawah */
-#date-slider{padding-bottom:20px!important}
-/* Hilangkan outline biru default Dash di graph */
+#date-slider{padding-bottom:22px!important}
 .dash-graph{border:none!important;outline:none!important}
+
+/* ── Header ── */
+.db-header{
+  display:flex;align-items:flex-start;
+  background:#1e293b;
+  padding:12px 16px 6px 16px;
+  border-bottom:1px solid #1e293b;
+  position:sticky;top:0;z-index:100;
+  gap:12px;
+}
+.db-brand{flex-shrink:0}
+.db-brand-name{font-size:16px;font-weight:800;color:#e2e8f0;white-space:nowrap}
+.db-brand-sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.db-slider-wrap{flex:1;min-width:0;padding-bottom:6px}
+.db-slider-label{color:#94a3b8;font-size:11px;font-weight:500;margin-bottom:6px}
+
+/* ── KPI grid ── */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:10px;
+  padding:10px 10px 0 10px;
+}
+
+/* ── Chart rows ── */
+.main-grid{display:grid;grid-template-columns:1fr;gap:10px;padding:10px;flex:1}
+.row-2-1 {display:grid;grid-template-columns:2fr 1fr;gap:10px}
+.row-1-1-1{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.row-1-2 {display:grid;grid-template-columns:1fr 2fr;gap:10px}
+
+/* ── Panel ── */
+.panel{background:#1e293b;border-radius:10px;border:1px solid #263349}
+.panel-title{color:#e2e8f0;font-weight:600;font-size:13px;padding:14px 16px 0 16px}
+.panel-body{padding:0 16px 14px 16px}
+
+/* ── Tablet ≤ 1024px ── */
+@media(max-width:1024px){
+  .row-2-1,.row-1-1-1,.row-1-2{grid-template-columns:1fr 1fr}
+  .kpi-grid{grid-template-columns:repeat(4,1fr)}
+}
+
+/* ── Mobile ≤ 640px ── */
+@media(max-width:640px){
+  .db-header{flex-direction:column}
+  .db-slider-wrap{margin-left:0!important;width:100%}
+  .row-2-1,.row-1-1-1,.row-1-2{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .panel-title{font-size:12px}
+}
 </style>
 </head>
 <body>{%app_entry%}
@@ -211,25 +250,13 @@ app.layout = html.Div(style={
 }, children=[
 
     # ── HEADER ──────────────────────────────────────────────────────────────
-    html.Div([
-        # Kiri: branding
-        html.Div([
-            html.Div("Maven Fuzzy Factory", style={
-                "fontSize": "16px", "fontWeight": "800", "color": TEXT,
-                "whiteSpace": "nowrap",
-            }),
-            html.Div("E-Commerce Analytics Dashboard", style={
-                "fontSize": "11px", "color": DIM, "marginTop": "2px",
-            }),
-        ], style={"flexShrink": "0"}),
-
-        # Kanan: slider dengan label
-        html.Div([
-            html.Div([
-                html.Span("Filter Rentang Bulan", style={
-                    "color": DIM, "fontSize": "11px", "fontWeight": "500",
-                }),
-            ], style={"marginBottom": "6px"}),
+    html.Div(className="db-header", children=[
+        html.Div(className="db-brand", children=[
+            html.Div("Maven Fuzzy Factory", className="db-brand-name"),
+            html.Div("E-Commerce Analytics Dashboard", className="db-brand-sub"),
+        ]),
+        html.Div(className="db-slider-wrap", children=[
+            html.Div("Filter Rentang Bulan", className="db-slider-label"),
             dcc.RangeSlider(
                 id="date-slider",
                 min=0, max=len(months_all) - 1,
@@ -239,66 +266,43 @@ app.layout = html.Div(style={
                 tooltip={"placement": "top", "always_visible": False},
                 allowCross=False,
             ),
-        ], style={
-            "flex": "1", "minWidth": "0",
-            "marginLeft": "40px",
-            "paddingBottom": "4px",   # ruang marks slider
-        }),
-    ], style={
-        "display": "flex", "alignItems": "flex-start",
-        "backgroundColor": CARD,
-        "padding": "12px 16px 8px 16px",
-        "borderBottom": "1px solid #1e293b",
-        "position": "sticky", "top": "0", "zIndex": "100",
-    }),
+        ]),
+    ]),
 
     # ── KPI ROW ─────────────────────────────────────────────────────────────
-    html.Div(id="kpi-cards", style={
-        "display": "grid",
-        "gridTemplateColumns": "repeat(7, 1fr)",
-        "gap": GAP,
-        "padding": GAP,
-        "paddingBottom": "0",
-    }),
+    html.Div(id="kpi-cards", className="kpi-grid"),
 
     # ── GRID UTAMA ──────────────────────────────────────────────────────────
-    html.Div([
+    html.Div(className="main-grid", children=[
 
         # Baris 1 — 2:1
-        html.Div([
-            panel("① Tren Sessions & Orders",   "chart-trend",  "290px"),
-            panel("② Conversion Rate Trend",    "chart-cvr",    "290px"),
-        ], style={"display": "grid", "gridTemplateColumns": "2fr 1fr", "gap": GAP}),
+        html.Div(className="row-2-1", children=[
+            panel("① Tren Sessions & Orders",  "chart-trend", "290px"),
+            panel("② Conversion Rate Trend",   "chart-cvr",   "290px"),
+        ]),
 
         # Baris 2 — 1:1:1
-        html.Div([
-            panel("③ Sessions per Channel",    "chart-ch-sessions", "300px"),
-            panel("③ CVR per Channel",         "chart-ch-cvr",      "300px"),
-            panel("③ Revenue Share (Donut)",   "chart-ch-donut",    "300px"),
-        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": GAP}),
+        html.Div(className="row-1-1-1", children=[
+            panel("③ Sessions per Channel",  "chart-ch-sessions", "300px"),
+            panel("③ CVR per Channel",       "chart-ch-cvr",      "300px"),
+            panel("③ Revenue Share (Donut)", "chart-ch-donut",    "300px"),
+        ]),
 
         # Baris 3 — 2:1
-        html.Div([
+        html.Div(className="row-2-1", children=[
             panel("④ Revenue per Order & Session", "chart-revenue", "300px"),
             panel("⑤ COGS vs Gross Margin",        "chart-margin",  "300px"),
-        ], style={"display": "grid", "gridTemplateColumns": "2fr 1fr", "gap": GAP}),
+        ]),
 
         # Baris 4 — full width
         panel("⑥ Monthly Refund Count & Amount", "chart-refund", "260px"),
 
         # Baris 5 — 1:2
-        html.Div([
-            panel("⑦ Sessions by Device Type",        "chart-device", "280px"),
-            panel("⑦ Top 10 Halaman (Pageviews)",     "chart-pages",  "280px"),
-        ], style={"display": "grid", "gridTemplateColumns": "1fr 2fr", "gap": GAP}),
-
-    ], style={
-        "display": "grid",
-        "gridTemplateColumns": "1fr",
-        "gap": GAP,
-        "padding": GAP,
-        "flex": "1",
-    }),
+        html.Div(className="row-1-2", children=[
+            panel("⑦ Sessions by Device Type",    "chart-device", "280px"),
+            panel("⑦ Top 10 Halaman (Pageviews)", "chart-pages",  "280px"),
+        ]),
+    ]),
 ])
 
 # ─────────────────────────────────────────────
